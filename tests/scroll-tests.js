@@ -84,6 +84,37 @@ describe('Scroll', function () {
         });
     });
 
+    it('should update its element\'s scrollLeft property to the same coordinate specified in the first parameter supplied to scroll.to()', function() {
+
+        var dateNowStub = sinon.stub(Date, 'now');
+        dateNowStub.onFirstCall().returns(1422630923001); // set the current time for first animation frame
+        var testCurrentTime = 1422630923005;
+        dateNowStub.onSecondCall().returns(testCurrentTime); // set the current on second animation frame
+        dateNowStub.onThirdCall().returns(testCurrentTime + 1000); // set the current animation time enough time forward to simulate a time that will trigger the last frame
+        requestAnimationFrameStub.yields(); // trigger requested animation frame immediately
+        var outerEl = document.createElement('div');
+        var innerEl = document.createElement('div');
+        outerEl.appendChild(innerEl);
+        document.body.appendChild(outerEl);
+        // setup to be "scrollable"
+        outerEl.style.overflow = 'scroll';
+        outerEl.style.width = '150px';
+        outerEl.style.height = '10px';
+        // inner element
+        innerEl.style.width = '600px';
+        innerEl.style.height = '10px';
+        // setup current scroll position
+        outerEl.scrollLeft = 20;
+        var scroll = new Scroll(outerEl);
+        var testTo = 120;
+        // test
+        return scroll.to(testTo, 0).then(function () {
+            assert.equal(outerEl.scrollLeft, testTo, 'after duration of scroll ends, the scrollLeft property of the element was changed to ' + testTo);
+            dateNowStub.restore();
+            document.body.removeChild(outerEl);
+        });
+    });
+
     it('passing an absolutely positioned element toElement() should call .to() with the amount of distance the element is from the top of its container', function() {
         var scrollToStub =  sinon.stub(Scroll.prototype, 'to').returns(Promise.resolve());
         var outerEl = document.createElement('div');

@@ -96,31 +96,33 @@ class Scroll {
          * @param {Number} startTime - The timestamp of when the animation should start
          * @param {Number} duration - The amount of time for the animation
          * @param {Function} easeFunc - The easing function to use
-         * @param [callback]
+         * @returns {Promise}
          */
-        let scroll = (el, from, to, prop, startTime, duration, easeFunc, callback) => {
+        let scroll = (el, from, to, prop, startTime, duration, easeFunc) => {
+
+            if (from === to) {
+                return Promise.resolve();
+            }
             window.requestAnimationFrame(() => {
-                var currentTime = Date.now(),
-                    time = Math.min(1, ((currentTime - startTime) / duration));
+                return new Promise((resolve) => {
+                    var currentTime = Date.now(),
+                        time = Math.min(1, ((currentTime - startTime) / duration));
 
-                if (from === to) {
-                    return callback ? callback() : null;
-                }
+                    moveElement(prop, (easeFunc(time) * (to - from)) + from);
 
-                moveElement(prop, (easeFunc(time) * (to - from)) + from);
-
-                /* prevent scrolling, if already there, or at end */
-                if (time < 1) {
-                    scroll(el, el[prop], to, prop, startTime, duration, easeFunc, callback);
-                } else if (callback) {
-                    callback();
-                }
+                    /* prevent scrolling, if already there, or at end */
+                    if (time < 1) {
+                        return scroll(el, el[prop], to, prop, startTime, duration, easeFunc);
+                    } else {
+                        resolve();
+                    }
+                });
             });
         };
-
-        return new Promise((resolve) => {
-            scroll(elem, fromY, y, 'scrollTop', Date.now(), options.duration, getEasing(options.easing), resolve);
-        });
+        return scroll(elem, fromY, y, 'scrollTop', Date.now(), options.duration, getEasing(options.easing))
+            .then(function () {
+                return scroll(elem, fromX, x, 'scrollLeft', Date.now(), options.duration, getEasing(options.easing));
+            });
     }
 
     /**
